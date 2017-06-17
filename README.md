@@ -62,3 +62,15 @@ public patch(url: string, body: any, options?: any, showSpinner?: boolean): Obse
 public delete(url: string, showSpinner?: boolean): Observable<Response>;
 public delete(url: string, options?: any, showSpinner?: boolean): Observable<Response>;
 ```
+
+## redirect when error
+```typescript
+this.http.setRedirect({
+      '-1': '/error',
+      0: '/signin',
+      401: '/signin',
+      403: '/signin'
+    });
+```
+1. Redirect to ```/signin``` if http status is 0, 401 or 403.
+1. '-1' is the default route if there is an error... '-1' is optional.

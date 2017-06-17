@@ -22,7 +22,7 @@ export class HttpService {
 
     constructor(private http: Http, private router: Router) { }
 
-    options(options: any): RequestOptionsArgs {
+    private options(options: any): RequestOptionsArgs {
         let token: string;
 
         if (!!this.token) {
@@ -47,25 +47,10 @@ export class HttpService {
         const showSpinner = typeof (arg1) === 'boolean' ? arg1 : arg2;
         const options = typeof (arg1) === 'object' ? arg1 : {};
 
-        if (showSpinner && !!this.spinnerOn) {
-            this.spinnerOn();
-        }
-        return this.http.get(url, this.options(options)).finally(() => {
-            if (showSpinner && !!this.spinnerOff) {
-                this.spinnerOff();
-            }
-        }).catch((err, caught) => {
-            if (!!this.redirect && !!this.redirect[err.status]) {
-                const link = this.redirect[err.status];
-                if (link.startsWith('http')) {
-                    window.location.href = link;
-                } else {
-                    this.router.navigateByUrl(link);
-                }
-                return Observable.empty();
-            }
-            return Observable.throw(err);
-        });
+        this.doShowSpinner(showSpinner);
+        return this.http.get(url, this.options(options))
+            .finally(() => this.doHideSpinner(showSpinner))
+            .catch(err => this.processException(err));
     }
 
     public post(url: string, body: any, showSpinner?: boolean): Observable<Response>;
@@ -74,24 +59,10 @@ export class HttpService {
         const showSpinner = typeof (arg1) === 'boolean' ? arg1 : arg2;
         const options = typeof (arg1) === 'object' ? arg1 : {};
 
-        if (showSpinner && !!this.spinnerOn) {
-            this.spinnerOn();
-        }
-        return this.http.post(url, body, this.options(options)).finally(() => {
-            if (showSpinner && !!this.spinnerOff) {
-                this.spinnerOff();
-            }
-        }).catch((err, caught) => {
-            if (!!this.redirect && !!this.redirect[err.status]) {
-                const link = this.redirect[err.status];
-                if (link.startsWith('http')) {
-                    window.location.href = link;
-                } else {
-                    this.router.navigateByUrl(link);
-                }
-            }
-            return Observable.throw(err);
-        });
+        this.doShowSpinner(showSpinner);
+        return this.http.post(url, body, this.options(options))
+            .finally(() => this.doHideSpinner(showSpinner))
+            .catch(err => this.processException(err));
     }
 
     public put(url: string, body: any, showSpinner?: boolean): Observable<Response>;
@@ -100,24 +71,10 @@ export class HttpService {
         const showSpinner = typeof (arg1) === 'boolean' ? arg1 : arg2;
         const options = typeof (arg1) === 'object' ? arg1 : {};
 
-        if (showSpinner && !!this.spinnerOn) {
-            this.spinnerOn();
-        }
-        return this.http.put(url, body, this.options(options)).finally(() => {
-            if (showSpinner && !!this.spinnerOff) {
-                this.spinnerOff();
-            }
-        }).catch((err, caught) => {
-            if (!!this.redirect && !!this.redirect[err.status]) {
-                const link = this.redirect[err.status];
-                if (link.startsWith('http')) {
-                    window.location.href = link;
-                } else {
-                    this.router.navigateByUrl(link);
-                }
-            }
-            return Observable.throw(err);
-        });
+        this.doShowSpinner(showSpinner);
+        return this.http.put(url, body, this.options(options))
+            .finally(() => this.doHideSpinner(showSpinner))
+            .catch(err => this.processException(err));
     }
 
 
@@ -127,24 +84,10 @@ export class HttpService {
         const showSpinner = typeof (arg1) === 'boolean' ? arg1 : arg2;
         const options = typeof (arg1) === 'object' ? arg1 : {};
 
-        if (showSpinner && !!this.spinnerOn) {
-            this.spinnerOn();
-        }
-        return this.http.patch(url, body, this.options(options)).finally(() => {
-            if (showSpinner && !!this.spinnerOff) {
-                this.spinnerOff();
-            }
-        }).catch((err, caught) => {
-            if (!!this.redirect && !!this.redirect[err.status]) {
-                const link = this.redirect[err.status];
-                if (link.startsWith('http')) {
-                    window.location.href = link;
-                } else {
-                    this.router.navigateByUrl(link);
-                }
-            }
-            return Observable.throw(err);
-        });
+        this.doShowSpinner(showSpinner);
+        return this.http.patch(url, body, this.options(options))
+            .finally(() => this.doHideSpinner(showSpinner))
+            .catch(err => this.processException(err));
     }
 
     public delete(url: string, showSpinner?: boolean): Observable<Response>;
@@ -153,24 +96,49 @@ export class HttpService {
         const showSpinner = typeof (arg1) === 'boolean' ? arg1 : arg2;
         const options = typeof (arg1) === 'object' ? arg1 : {};
 
+        this.doShowSpinner(showSpinner);
+        return this.http.delete(url, this.options(options))
+            .finally(() => this.doHideSpinner(showSpinner))
+            .catch(err => this.processException(err));
+    }
+
+    private doShowSpinner(showSpinner: boolean) {
         if (showSpinner && !!this.spinnerOn) {
             this.spinnerOn();
         }
-        return this.http.delete(url, this.options(options)).finally(() => {
-            if (showSpinner && !!this.spinnerOff) {
-                this.spinnerOff();
-            }
-        }).catch((err, caught) => {
-            if (!!this.redirect && !!this.redirect[err.status]) {
-                const link = this.redirect[err.status];
-                if (link.startsWith('http')) {
-                    window.location.href = link;
-                } else {
-                    this.router.navigateByUrl(link);
+    }
+
+    private doHideSpinner(showSpinner: boolean) {
+        if (showSpinner && !!this.spinnerOff) {
+            this.spinnerOff();
+        }
+    }
+
+    private doRedirect(link: string) {
+        if (link.startsWith('http')) {
+            window.location.href = link;
+        } else {
+            this.router.navigateByUrl(link);
+        }
+    }
+
+    private processException(err: any) {
+
+        if (!!this.redirect) {
+            const link = this.redirect[err.status];
+            if (!!link) {
+                this.doRedirect(link);
+                return Observable.empty();
+            } else {
+                const defaultLink = this.redirect[-1];
+                if (!!defaultLink) {
+                    this.doRedirect(defaultLink);
+                    return Observable.empty();
                 }
             }
-            return Observable.throw(err);
-        });
+        }
+        return Observable.throw(err);
+
     }
 
     public setAuthorizationToken(tokenType: string, token: string) {
